@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucky Reels – Jackpot Slots</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold:    #FFD700;
+    --gold2:   #FFA500;
+    --dark:    #0D0D0D;
+    --rim:     #2C2C2C;
+    --text:    #F0E6CC;
+    --win:     #2ECC71;
+    --lose:    #E74C3C;
+    --jackpot: #FF00FF;
+  }
+
+  body {
+    background: var(--dark);
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px 16px 48px;
+    overflow-x: hidden;
+  }
+
+  .sign {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.4rem, 8vw, 4.2rem);
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    text-shadow: 0 0 6px #fff, 0 0 18px var(--gold), 0 0 40px var(--gold2), 0 0 80px var(--gold2);
+    margin-bottom: 6px;
+    user-select: none;
+  }
+  .sub {
+    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold2);
+    opacity: 0.7;
+    margin-bottom: 28px;
+  }
+
+  .machine {
+    background: linear-gradient(160deg, #1e1e1e 0%, #111 100%);
+    border: 3px solid #3a3a3a;
+    border-radius: 28px;
+    padding: 32px 28px 28px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 0 0 1px #444, 0 8px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06);
+    position: relative;
+  }
+  .machine::before, .machine::after {
+    content: '';
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #555, #222);
+    box-shadow: 0 0 4px #000;
+    top: 16px;
+  }
+  .machine::before { left: 16px; }
+  .machine::after  { right: 16px; }
+
+  /* JACKPOT DISPLAY */
+  .jackpot-display {
+    background: #000;
+    border: 2px solid var(--gold2);
+    border-radius: 10px;
+    text-align: center;
+    padding: 8px 14px;
+    margin-bottom: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .jackpot-display::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,215,0,0.08), transparent);
+    animation: shimmer 2.4s infinite;
+  }
+  @keyframes shimmer { to { left: 200%; } }
+  .jackpot-label { font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold2); opacity: 0.8; }
+  .jackpot-amount { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; color: var(--gold); text-shadow: 0 0 12px var(--gold2); letter-spacing: 0.04em; line-height: 1.1; }
+
+  /* REELS */
+  .reels-frame {
+    background: #000;
+    border: 3px solid #333;
+    border-radius: 14px;
+    padding: 10px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 4px 24px rgba(0,0,0,0.9);
+    position: relative;
+  }
+  .payline {
+    position: absolute; left: 0; right: 0; top: 50%;
+    transform: translateY(-50%);
+    height: 3px;
+    background: rgba(255,215,0,0.25);
+    pointer-events: none;
+    z-index: 10;
+  }
+  .payline::before, .payline::after {
+    content: ''; position: absolute; top: 50%; transform: translateY(-50%);
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--gold); box-shadow: 0 0 6px var(--gold);
+  }
+  .payline::before { left: 4px; }
+  .payline::after  { right: 4px; }
+  .reels-row { display: flex; gap: 10px; }
+  .reel-wrap {
+    flex: 1; overflow: hidden; height: 120px;
+    background: linear-gradient(180deg, #0a0a0a 0%, #111 40%, #0a0a0a 100%);
+    border-radius: 8px; border: 1px solid #2a2a2a; position: relative;
+  }
+  .reel-wrap::before, .reel-wrap::after {
+    content: ''; position: absolute; left: 0; right: 0; height: 36px; z-index: 5; pointer-events: none;
+  }
+  .reel-wrap::before { top: 0;    background: linear-gradient(180deg, rgba(0,0,0,0.85), transparent); }
+  .reel-wrap::after  { bottom: 0; background: linear-gradient(0deg,   rgba(0,0,0,0.85), transparent); }
+  .reel { display: flex; flex-direction: column; align-items: center; will-change: transform; }
+  .symbol { width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; font-size: 3.4rem; line-height: 1; user-select: none; flex-shrink: 0; }
+
+  /* RESULT */
+  .result-msg { min-height: 40px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; letter-spacing: 0.06em; color: var(--text); margin-bottom: 16px; transition: color 0.2s; }
+  .result-msg.win     { color: var(--win);    text-shadow: 0 0 14px var(--win); }
+  .result-msg.lose    { color: var(--lose); }
+  .result-msg.jackpot { color: var(--jackpot); text-shadow: 0 0 20px var(--jackpot), 0 0 40px var(--jackpot); animation: pulse 0.5s infinite alternate; }
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.6; } }
+
+  /* STATS */
+  .stats { display: flex; gap: 10px; margin-bottom: 20px; }
+  .stat-box { flex: 1; background: var(--rim); border-radius: 10px; padding: 10px 8px; text-align: center; border: 1px solid #333; }
+  .stat-label { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: #888; margin-bottom: 3px; }
+  .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--gold); letter-spacing: 0.04em; }
+
+  /* BET */
+  .bet-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; justify-content: center; }
+  .bet-btn { background: var(--rim); border: 1px solid #444; color: var(--text); border-radius: 8px; font-size: 1.1rem; width: 38px; height: 38px; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; justify-content: center; }
+  .bet-btn:hover { background: #333; }
+  .bet-display { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; color: var(--gold); letter-spacing: 0.06em; min-width: 80px; text-align: center; }
+  .bet-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.2em; color: #666; margin-right: 4px; }
+
+  /* SPIN */
+  .spin-btn {
+    width: 100%; padding: 18px;
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; letter-spacing: 0.12em;
+    color: var(--dark);
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
+    border: none; border-radius: 14px; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255,165,0,0.35), inset 0 1px 0 rgba(255,255,255,0.3);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .spin-btn:active:not(:disabled) { transform: scale(0.97); }
+  .spin-btn:disabled { background: linear-gradient(135deg, #555, #333); color: #888; cursor: not-allowed; box-shadow: none; }
+
+  /* TOP-UP BUTTON */
+  .topup-btn {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; margin-top: 10px; padding: 11px;
+    background: linear-gradient(135deg, #1a3a1a, #0f2a0f);
+    border: 1px solid #2ecc71aa; border-radius: 12px;
+    color: var(--win); font-size: 0.82rem; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer; transition: background 0.2s, border-color 0.2s;
+  }
+  .topup-btn:hover { background: #1f4a1f; border-color: var(--win); }
+
+  /* DAILY BONUS */
+  .daily-banner {
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(135deg, #1a1000, #0d0a00);
+    border: 1px solid var(--gold2); border-radius: 12px;
+    padding: 10px 14px; margin-top: 10px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .daily-banner:hover { background: #241800; }
+  .daily-banner.claimed { opacity: 0.4; cursor: default; pointer-events: none; }
+  .db-icon { font-size: 1.5rem; }
+  .db-text { flex: 1; }
+  .db-title { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); }
+  .db-sub { font-size: 0.68rem; color: #888; margin-top: 1px; }
+  .db-claim { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--gold2); letter-spacing: 0.06em; }
+
+  /* LOW BALANCE */
+  .low-bal {
+    display: none; background: linear-gradient(135deg, #2a0000, #1a0000);
+    border: 1px solid var(--lose); border-radius: 10px;
+    padding: 10px 14px; margin-top: 10px; text-align: center;
+    font-size: 0.78rem; color: var(--lose); cursor: pointer;
+    animation: lowPulse 1.5s infinite alternate;
+  }
+  .low-bal.visible { display: block; }
+  @keyframes lowPulse { from { border-color: #c0392b55; } to { border-color: var(--lose); } }
+
+  /* PAYTABLE */
+  .paytable-toggle {
+    background: none; border: 1px solid #333; color: #666;
+    border-radius: 8px; padding: 8px 14px; font-size: 0.72rem;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    cursor: pointer; margin-top: 14px; width: 100%;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .paytable-toggle:hover { color: var(--gold2); border-color: var(--gold2); }
+  .paytable { display: none; background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 12px; margin-top: 12px; padding: 16px; }
+  .paytable.open { display: block; }
+  .paytable h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 0.12em; color: var(--gold2); margin-bottom: 10px; text-align: center; }
+  .pay-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid #1f1f1f; font-size: 0.82rem; }
+  .pay-row:last-child { border-bottom: none; }
+  .pay-syms { font-size: 1.3rem; letter-spacing: 0.05em; flex: 1; }
+  .pay-desc { color: #888; flex: 2; font-size: 0.75rem; }
+  .pay-mult { font-family: 'Bebas Neue', sans-serif; color: var(--gold); font-size: 1.1rem; min-width: 48px; text-align: right; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85); z-index: 2000;
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #141414; border: 2px solid #333; border-radius: 22px;
+    padding: 28px 24px; width: 100%; max-width: 440px;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.9); position: relative;
+    animation: modalIn 0.25s cubic-bezier(.22,1,.36,1);
+  }
+  @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: #555; font-size: 1.4rem; cursor: pointer; line-height: 1; transition: color 0.15s; }
+  .modal-close:hover { color: var(--text); }
+  .modal h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; letter-spacing: 0.08em; color: var(--gold); margin-bottom: 4px; }
+  .modal-sub { font-size: 0.72rem; color: #666; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 22px; }
+
+  .packages { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .pkg {
+    background: #1c1c1c; border: 2px solid #2a2a2a; border-radius: 14px;
+    padding: 14px 10px; text-align: center; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s; position: relative;
+  }
+  .pkg:hover { border-color: var(--gold2); background: #222; }
+  .pkg:active { transform: scale(0.97); }
+  .pkg.popular { border-color: var(--gold2); }
+  .badge {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    background: var(--gold2); color: #000; font-size: 0.6rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: 20px;
+  }
+  .pkg-icon { font-size: 1.8rem; margin-bottom: 4px; }
+  .pkg-coins { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; color: var(--gold); letter-spacing: 0.04em; line-height: 1.1; }
+  .pkg-label { font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+  .pkg-price { margin-top: 8px; font-size: 0.9rem; font-weight: 700; color: var(--win); }
+  .pkg-bonus { font-size: 0.65rem; color: #888; margin-top: 2px; }
+
+  .custom-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .custom-row label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: #666; white-space: nowrap; }
+  .custom-input {
+    flex: 1; background: #1c1c1c; border: 1px solid #333; border-radius: 8px;
+    color: var(--text); font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem;
+    padding: 8px 12px; outline: none; letter-spacing: 0.06em; transition: border-color 0.15s;
+  }
+  .custom-input:focus { border-color: var(--gold2); }
+  .custom-apply {
+    background: #2a2a2a; border: 1px solid #444; color: var(--text); border-radius: 8px;
+    padding: 8px 14px; font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s;
+  }
+  .custom-apply:hover { background: #333; }
+  .modal-note { font-size: 0.65rem; color: #444; text-align: center; margin-top: 4px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #1f1f1f; border: 1px solid #333; border-radius: 100px;
+    padding: 10px 22px; font-size: 0.85rem; font-weight: 600;
+    color: var(--text); z-index: 3000;
+    transition: transform 0.35s cubic-bezier(.22,1,.36,1), opacity 0.35s;
+    opacity: 0; white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* WIN FLASH */
+  .win-flash { position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: 0; }
+  .win-flash.active { animation: flashbang 0.7s ease-out forwards; }
+  @keyframes flashbang { 0% { opacity: 0.5; background: rgba(255,215,0,0.25); } 100% { opacity: 0; } }
+
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 1000; }
+</style>
+</head>
+<body>
+
+<div class="win-flash" id="winFlash"></div>
+<canvas id="confetti"></canvas>
+
+<div class="sign">🎰 Lucky Reels</div>
+<p class="sub">Pull to win big</p>
+
+<div class="machine">
+
+  <div class="jackpot-display">
+    <div class="jackpot-label">Jackpot Pool</div>
+    <div class="jackpot-amount" id="jackpotAmt">$5,000</div>
+  </div>
+
+  <div class="reels-frame">
+    <div class="payline"></div>
+    <div class="reels-row" id="reelsRow"></div>
+  </div>
+
+  <div class="result-msg" id="resultMsg">Place your bet and spin!</div>
+
+  <div class="stats">
+    <div class="stat-box"><div class="stat-label">Balance</div><div class="stat-value" id="balVal">$1,000</div></div>
+    <div class="stat-box"><div class="stat-label">Last Win</div><div class="stat-value" id="lastWin">—</div></div>
+    <div class="stat-box"><div class="stat-label">Spins</div><div class="stat-value" id="spinCount">0</div></div>
+  </div>
+
+  <div class="bet-row">
+    <span class="bet-label">Bet</span>
+    <button class="bet-btn" id="betDown">−</button>
+    <div class="bet-display" id="betDisp">$10</div>
+    <button class="bet-btn" id="betUp">+</button>
+  </div>
+
+  <button class="spin-btn" id="spinBtn">SPIN</button>
+
+  <!-- Top-Up -->
+  <button class="topup-btn" id="topupBtn">💰 &nbsp;Top Up Coins</button>
+
+  <!-- Daily Bonus -->
+  <div class="daily-banner" id="dailyBanner">
+    <div class="db-icon">🎁</div>
+    <div class="db-text">
+      <div class="db-title">Daily Free Coins</div>
+      <div class="db-sub" id="dailySub">Come back every 24 h for free coins</div>
+    </div>
+    <div class="db-claim" id="dailyClaimLabel">Claim</div>
+  </div>
+
+  <!-- Low Balance Warning -->
+  <div class="low-bal" id="lowBal">⚠️ Running low on coins — tap to top up!</div>
+
+  <!-- Paytable -->
+  <button class="paytable-toggle" id="ptToggle">▾ Paytable</button>
+  <div class="paytable" id="paytable">
+    <h3>Paytable · 3-of-a-kind pays ×bet</h3>
+    <div class="pay-row"><span class="pay-syms">7️⃣7️⃣7️⃣</span><span class="pay-desc">Triple Seven — JACKPOT</span><span class="pay-mult">×200</span></div>
+    <div class="pay-row"><span class="pay-syms">💎💎💎</span><span class="pay-desc">Diamond</span><span class="pay-mult">×50</span></div>
+    <div class="pay-row"><span class="pay-syms">🍀🍀🍀</span><span class="pay-desc">Clover</span><span class="pay-mult">×25</span></div>
+    <div class="pay-row"><span class="pay-syms">🍒🍒🍒</span><span class="pay-desc">Cherry</span><span class="pay-mult">×15</span></div>
+    <div class="pay-row"><span class="pay-syms">🔔🔔🔔</span><span class="pay-desc">Bell</span><span class="pay-mult">×10</span></div>
+    <div class="pay-row"><span class="pay-syms">⭐⭐⭐</span><span class="pay-desc">Star</span><span class="pay-mult">×8</span></div>
+    <div class="pay-row"><span class="pay-syms">🍋🍋🍋</span><span class="pay-desc">Lemon</span><span class="pay-mult">×5</span></div>
+    <div class="pay-row"><span class="pay-syms">🍊🍊🍊</span><span class="pay-desc">Orange</span><span class="pay-mult">×4</span></div>
+    <div class="pay-row"><span class="pay-syms">Any 2 match</span><span class="pay-desc">Partial</span><span class="pay-mult">×1.5</span></div>
+  </div>
+
+</div>
+
+<!-- TOP-UP MODAL -->
+<div class="modal-overlay" id="topupModal">
+  <div class="modal">
+    <button class="modal-close" id="modalClose">✕</button>
+    <h2>💰 Top Up</h2>
+    <p class="modal-sub">All coins are free — play for fun!</p>
+
+    <div class="packages">
+      <div class="pkg" data-coins="500">
+        <div class="pkg-icon">🪙</div>
+        <div class="pkg-coins">500</div>
+        <div class="pkg-label">Coins</div>
+        <div class="pkg-price">Starter</div>
+        <div class="pkg-bonus">Quick refill</div>
+      </div>
+      <div class="pkg popular" data-coins="2000">
+        <div class="badge">Popular</div>
+        <div class="pkg-icon">💰</div>
+        <div class="pkg-coins">2,000</div>
+        <div class="pkg-label">Coins</div>
+        <div class="pkg-price">Regular</div>
+        <div class="pkg-bonus">4× more coins</div>
+      </div>
+      <div class="pkg" data-coins="5000">
+        <div class="pkg-icon">💎</div>
+        <div class="pkg-coins">5,000</div>
+        <div class="pkg-label">Coins</div>
+        <div class="pkg-price">Big Stack</div>
+        <div class="pkg-bonus">High roller</div>
+      </div>
+      <div class="pkg" data-coins="10000">
+        <div class="pkg-icon">🏆</div>
+        <div class="pkg-coins">10,000</div>
+        <div class="pkg-label">Coins</div>
+        <div class="pkg-price">Whale Mode</div>
+        <div class="pkg-bonus">Go all in</div>
+      </div>
+    </div>
+
+    <div class="custom-row">
+      <label for="customAmt">Custom</label>
+      <input class="custom-input" type="number" id="customAmt" min="1" max="999999" placeholder="Enter amount" />
+      <button class="custom-apply" id="customApply">Add</button>
+    </div>
+    <p class="modal-note">No real money involved. Coins are stored locally in your browser.</p>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──
+const SYMBOLS   = ['7️⃣','💎','🍀','🍒','🔔','⭐','🍋','🍊'];
+const WEIGHTS   = [1, 3, 5, 8, 10, 14, 18, 20];
+const PAYOUTS   = { '7️⃣':200, '💎':50, '🍀':25, '🍒':15, '🔔':10, '⭐':8, '🍋':5, '🍊':4 };
+const NUM_REELS = 3;
+const STRIP_LEN = 30;
+const BET_OPTS  = [5, 10, 25, 50, 100];
+const DAILY_AMT = 500;
+const DAILY_KEY = 'luckyreels_daily';
+const BAL_KEY   = 'luckyreels_balance';
+const LOW_THRESHOLD = 50;
+
+// ── STATE ──
+let balance  = parseInt(localStorage.getItem(BAL_KEY) || '1000', 10);
+let jackpot  = 5000;
+let bet      = 10;
+let betIdx   = 1;
+let spins    = 0;
+let spinning = false;
+let reelEls  = [];
+let stripData = [];
+
+// ── PERSIST ──
+function saveBalance() { localStorage.setItem(BAL_KEY, balance); }
+
+// ── WEIGHTED RANDOM ──
+function wrand() {
+  const total = WEIGHTS.reduce((a,b)=>a+b,0);
+  let r = Math.random()*total;
+  for (let i=0;i<SYMBOLS.length;i++) { r-=WEIGHTS[i]; if(r<0) return SYMBOLS[i]; }
+  return SYMBOLS[SYMBOLS.length-1];
+}
+function buildStrip() { return Array.from({length:STRIP_LEN}, wrand); }
+
+// ── INIT REELS ──
+function initReels() {
+  const row = document.getElementById('reelsRow');
+  row.innerHTML = '';
+  reelEls = []; stripData = [];
+  for (let i=0;i<NUM_REELS;i++) {
+    const strip = buildStrip();
+    stripData.push(strip);
+    const wrap = document.createElement('div'); wrap.className = 'reel-wrap';
+    const reel = document.createElement('div'); reel.className = 'reel';
+    for (const sym of [...strip,...strip,...strip]) {
+      const cell = document.createElement('div'); cell.className='symbol'; cell.textContent=sym;
+      reel.appendChild(cell);
+    }
+    wrap.appendChild(reel); row.appendChild(wrap);
+    reelEls.push(reel);
+    setReelPos(reel, STRIP_LEN);
+  }
+}
+function setReelPos(reel, idx) { reel.style.transform=`translateY(-${idx*120}px)`; }
+
+// ── SPIN ──
+function pickResult() { return Array.from({length:NUM_REELS},()=>wrand()); }
+
+function spin() {
+  if (spinning) return;
+  if (balance < bet) {
+    openModal();
+    showToast('⚠️ Not enough coins — top up first!');
+    return;
+  }
+  spinning = true;
+  balance -= bet;
+  jackpot += Math.floor(bet * 0.05);
+  spins++;
+  saveBalance();
+  updateUI();
+
+  const spinBtn = document.getElementById('spinBtn');
+  spinBtn.disabled = true;
+  document.getElementById('resultMsg').className = 'result-msg';
+  document.getElementById('resultMsg').textContent = '…';
+
+  const finalSymbols = pickResult();
+  reelEls.forEach((reel, i) => {
+    const delay = i * 250;
+    const totalSpins = 4 + i;
+    const finalIdx = stripData[i].indexOf(finalSymbols[i]);
+    const targetIdx = STRIP_LEN + finalIdx;
+    animateReel(reel, STRIP_LEN, totalSpins * STRIP_LEN + targetIdx, delay,
+      i === NUM_REELS - 1 ? () => resolve(finalSymbols) : null);
+  });
+}
+
+function animateReel(reel, fromIdx, toIdx, delay, onDone) {
+  const H = 120;
+  const duration = 1200 + Math.abs(toIdx - fromIdx) * 6;
+  const ease = t => t < 0.6 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+  let start = null;
+  setTimeout(() => {
+    function frame(ts) {
+      if (!start) start = ts;
+      const raw = Math.min((ts - start) / duration, 1);
+      const curY = fromIdx + (toIdx - fromIdx) * ease(raw);
+      reel.style.transform = `translateY(-${curY * H}px)`;
+      if (raw < 1) requestAnimationFrame(frame);
+      else {
+        reel.style.transform = `translateY(-${(toIdx % STRIP_LEN + STRIP_LEN) * H}px)`;
+        if (onDone) onDone();
+      }
+    }
+    requestAnimationFrame(frame);
+  }, delay);
+}
+
+function resolve(result) {
+  spinning = false;
+  document.getElementById('spinBtn').disabled = false;
+  const [a,b,c] = result;
+  let winAmt=0, msgClass='lose', msg='No win – try again!';
+
+  if (a===b && b===c) {
+    if (a==='7️⃣') {
+      winAmt=jackpot; jackpot=5000; msgClass='jackpot';
+      msg=`🎰 JACKPOT! +$${winAmt.toLocaleString()}`;
+      launchConfetti(180,'#FFD700');
+    } else {
+      winAmt=Math.floor(bet*PAYOUTS[a]); msgClass='win';
+      msg=`3× ${a}  +$${winAmt.toLocaleString()}`;
+      launchConfetti(60,'#2ECC71');
+    }
+    flashScreen();
+  } else if (a===b||b===c||a===c) {
+    winAmt=Math.floor(bet*1.5); msgClass='win';
+    msg=`Pair! +$${winAmt.toLocaleString()}`;
+  }
+
+  balance += winAmt;
+  saveBalance();
+  document.getElementById('lastWin').textContent = winAmt>0 ? `$${winAmt.toLocaleString()}` : '—';
+  updateUI();
+  document.getElementById('resultMsg').className=`result-msg ${msgClass}`;
+  document.getElementById('resultMsg').textContent=msg;
+}
+
+// ── UI ──
+function updateUI() {
+  document.getElementById('balVal').textContent = `$${balance.toLocaleString()}`;
+  document.getElementById('jackpotAmt').textContent = `$${jackpot.toLocaleString()}`;
+  document.getElementById('spinCount').textContent = spins;
+  document.getElementById('betDisp').textContent = `$${bet}`;
+  // low balance
+  const lb = document.getElementById('lowBal');
+  if (balance < LOW_THRESHOLD) lb.classList.add('visible');
+  else lb.classList.remove('visible');
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ── TOP-UP MODAL ──
+function openModal() { document.getElementById('topupModal').classList.add('open'); }
+function closeModal() { document.getElementById('topupModal').classList.remove('open'); }
+
+function topUp(amount) {
+  amount = parseInt(amount, 10);
+  if (!amount || amount < 1) return;
+  balance += amount;
+  saveBalance();
+  updateUI();
+  closeModal();
+  showToast(`🪙 +$${amount.toLocaleString()} coins added!`);
+}
+
+// ── DAILY BONUS ──
+function checkDaily() {
+  const banner = document.getElementById('dailyBanner');
+  const label  = document.getElementById('dailyClaimLabel');
+  const sub    = document.getElementById('dailySub');
+  const stored = localStorage.getItem(DAILY_KEY);
+
+  if (stored) {
+    const last = new Date(parseInt(stored, 10));
+    const next = new Date(last.getTime() + 24*60*60*1000);
+    const now  = new Date();
+    if (now < next) {
+      banner.classList.add('claimed');
+      label.textContent = 'Claimed';
+      // countdown
+      function tick() {
+        const remaining = next - new Date();
+        if (remaining <= 0) { checkDaily(); return; }
+        const h = Math.floor(remaining/3600000);
+        const m = Math.floor((remaining%3600000)/60000);
+        const s = Math.floor((remaining%60000)/1000);
+        sub.textContent = `Next bonus in ${h}h ${m}m ${s}s`;
+        setTimeout(tick, 1000);
+      }
+      tick();
+      return;
+    }
+  }
+  banner.classList.remove('claimed');
+  label.textContent = 'Claim';
+  sub.textContent = 'Come back every 24 h for free coins';
+}
+
+function claimDaily() {
+  const banner = document.getElementById('dailyBanner');
+  if (banner.classList.contains('claimed')) return;
+  balance += DAILY_AMT;
+  saveBalance();
+  localStorage.setItem(DAILY_KEY, Date.now().toString());
+  updateUI();
+  checkDaily();
+  showToast(`🎁 Daily bonus! +$${DAILY_AMT.toLocaleString()} coins`);
+  launchConfetti(40,'#2ECC71');
+}
+
+// ── FLASH / CONFETTI ──
+function flashScreen() {
+  const el = document.getElementById('winFlash');
+  el.classList.remove('active'); void el.offsetWidth; el.classList.add('active');
+}
+
+function launchConfetti(count, color) {
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const colors = color==='#FFD700'
+    ? ['#FFD700','#FFA500','#FF69B4','#00BFFF','#7FFF00']
+    : ['#2ECC71','#FFD700','#3498DB'];
+  const particles = Array.from({length:count},()=>({
+    x:Math.random()*canvas.width, y:-10,
+    r:5+Math.random()*5, d:2+Math.random()*4,
+    col:colors[Math.floor(Math.random()*colors.length)],
+    rot:Math.random()*Math.PI*2, spin:(Math.random()-0.5)*0.2,
+    vx:(Math.random()-0.5)*3,
+  }));
+  let frame=0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+      ctx.fillStyle=p.col; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.4);
+      ctx.restore();
+      p.y+=p.d; p.x+=p.vx; p.rot+=p.spin; p.d+=0.03;
+    });
+    frame++;
+    if(frame<180) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  requestAnimationFrame(draw);
+}
+
+// ── EVENTS ──
+document.getElementById('spinBtn').addEventListener('click', spin);
+
+document.getElementById('betDown').addEventListener('click', ()=>{
+  if(betIdx>0){betIdx--;bet=BET_OPTS[betIdx];updateUI();}
+});
+document.getElementById('betUp').addEventListener('click', ()=>{
+  if(betIdx<BET_OPTS.length-1){betIdx++;bet=BET_OPTS[betIdx];updateUI();}
+});
+
+document.getElementById('ptToggle').addEventListener('click', ()=>{
+  const pt = document.getElementById('paytable');
+  pt.classList.toggle('open');
+  document.getElementById('ptToggle').textContent = pt.classList.contains('open') ? '▴ Paytable' : '▾ Paytable';
+});
+
+// Top-up
+document.getElementById('topupBtn').addEventListener('click', openModal);
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('topupModal').addEventListener('click', e=>{
+  if(e.target===document.getElementById('topupModal')) closeModal();
+});
+document.querySelectorAll('.pkg').forEach(pkg=>{
+  pkg.addEventListener('click', ()=> topUp(pkg.dataset.coins));
+});
+document.getElementById('customApply').addEventListener('click', ()=>{
+  const val = document.getElementById('customAmt').value;
+  if(!val||val<1){showToast('Enter a valid amount'); return;}
+  topUp(val);
+  document.getElementById('customAmt').value='';
+});
+document.getElementById('customAmt').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('customApply').click();
+});
+
+// Daily bonus
+document.getElementById('dailyBanner').addEventListener('click', claimDaily);
+
+// Low balance shortcut
+document.getElementById('lowBal').addEventListener('click', openModal);
+
+// Keyboard
+document.addEventListener('keydown', e=>{
+  if((e.code==='Space'||e.code==='Enter') && document.activeElement.tagName!=='INPUT'){
+    e.preventDefault(); spin();
+  }
+  if(e.code==='Escape') closeModal();
+});
+
+// ── BOOT ──
+initReels();
+updateUI();
+checkDaily();
+</script>
+</body>
+</html>
